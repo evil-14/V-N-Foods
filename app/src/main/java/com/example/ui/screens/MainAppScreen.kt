@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -337,7 +339,16 @@ fun BottomTabItem(
 fun ShopTabScreen(viewModel: MainViewModel) {
     val items by viewModel.allBatterItems.collectAsState()
     val cart by viewModel.cartItems.collectAsState()
+    val reviews by viewModel.allReviews.collectAsState()
     var selectedCategory by remember { mutableStateOf("All") }
+    var showReviewsDialog by remember { mutableStateOf(false) }
+
+    if (showReviewsDialog) {
+        AppleReviewsDialog(
+            viewModel = viewModel,
+            onDismiss = { showReviewsDialog = false }
+        )
+    }
 
     val categories = listOf("All", "Traditional Batter")
 
@@ -438,7 +449,7 @@ fun ShopTabScreen(viewModel: MainViewModel) {
                                 width = 1.dp,
                                 color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                                 shape = RoundedCornerShape(20.dp)
-                            )
+                              )
                             .clickable { selectedCategory = category }
                             .padding(horizontal = 18.dp, vertical = 10.dp)
                     ) {
@@ -490,7 +501,9 @@ fun ShopTabScreen(viewModel: MainViewModel) {
                     item = batterItem,
                     quantityInCart = cartQty,
                     onAdd = { viewModel.addToCart(batterItem.id, 1) },
-                    onSubtract = { viewModel.addToCart(batterItem.id, -1) }
+                    onSubtract = { viewModel.addToCart(batterItem.id, -1) },
+                    reviewCount = reviews.size,
+                    onReviewsClick = { showReviewsDialog = true }
                 )
             }
         }
@@ -502,7 +515,9 @@ fun BatterCard(
     item: BatterItem,
     quantityInCart: Int,
     onAdd: () -> Unit,
-    onSubtract: () -> Unit
+    onSubtract: () -> Unit,
+    reviewCount: Int,
+    onReviewsClick: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(18.dp),
@@ -586,19 +601,29 @@ fun BatterCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Rounded.Star,
-                        contentDescription = "Rating",
-                        tint = Color(0xFFFFCC00),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = item.rating.toString(),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onReviewsClick() }
+                            .padding(vertical = 4.dp, horizontal = 2.dp)
+                            .testTag("batter_card_reviews_row_${item.id}")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Star,
+                            contentDescription = "Rating",
+                            tint = Color(0xFFFFCC00),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${item.rating} • ($reviewCount reviews)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GourmetPrimaryLight,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    }
                     Spacer(modifier = Modifier.width(12.dp))
                     Icon(
                         imageVector = Icons.Rounded.AccessTime,
@@ -1575,67 +1600,9 @@ fun ActiveOrderTrackingCard(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Progress timeline with custom dots matching HTML
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Background horizontal white line
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.9f)
-                                .height(3.dp)
-                                .background(Color.White, RoundedCornerShape(2.dp))
-                        )
-
-                        // Timeline dots
-                        Row(
-                            modifier = Modifier.fillMaxWidth(0.9f),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Dot 1 (Pending/Prep) - completed
-                            Box(
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .background(GourmetPrimaryLight, CircleShape)
-                                    .border(4.dp, GourmetPeachLight, CircleShape)
-                            )
-                            // Dot 2 (Dispatched/Out) - completed if progress > 0.5
-                            Box(
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .background(
-                                        if (progressAnim >= 0.5f) GourmetPrimaryLight else Color.White,
-                                        CircleShape
-                                    )
-                                    .border(4.dp, GourmetPeachLight, CircleShape)
-                            )
-                            // Dot 3 (Delivered) - completed if progress >= 1.0
-                            Box(
-                                modifier = Modifier
-                                    .size(if (progressAnim >= 1.0f) 20.dp else 16.dp)
-                                    .background(
-                                        if (progressAnim >= 1.0f) GourmetPrimaryLight else Color.White,
-                                        CircleShape
-                                    )
-                                    .border(4.dp, GourmetPeachLight, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (progressAnim >= 1.0f) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .background(Color.White, CircleShape)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    // Embedded Gourmet Order Progress Stepper Component
+                    Spacer(modifier = Modifier.height(16.dp))
+                    GourmetOrderStepper(progress = progressAnim, status = order.status)
                 }
             }
         }
@@ -2680,3 +2647,708 @@ fun DrawerCartItemCard(
         }
     }
 }
+
+@Composable
+fun GourmetOrderStepper(
+    progress: Float,
+    status: String
+) {
+    val stages = listOf(
+        Triple("Received", Icons.Rounded.ReceiptLong, "Order Received"),
+        Triple("Preparing", Icons.Rounded.Kitchen, "Preparing Batter"),
+        Triple("Dispatched", Icons.Rounded.LocalShipping, "Dispatched"),
+        Triple("On the Way", Icons.Rounded.DirectionsBike, "Out for Delivery")
+    )
+
+    // Determine active index based on status
+    val activeIndex = when (status) {
+        "PENDING" -> 0
+        "PREPARING" -> 1
+        "DISPATCHED" -> 2
+        "OUT_FOR_DELIVERY" -> 3
+        "DELIVERED" -> 4
+        else -> 0
+    }
+
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, GourmetClayLight.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+            .testTag("order_stepper_component")
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "DELIVERY TIMELINE",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = GourmetSubtextLight,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                // 1. Background progress track (gray line)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .background(GourmetSlightGray, RoundedCornerShape(2.dp))
+                )
+
+                // 2. Animated active progress fill track
+                // Normalize progress line to active index
+                val fillFraction = when {
+                    activeIndex >= 3 -> 1.0f
+                    activeIndex == 0 -> 0.05f
+                    activeIndex == 1 -> 0.33f
+                    activeIndex == 2 -> 0.66f
+                    else -> 0.0f
+                }
+                val animatedFillFraction by animateFloatAsState(
+                    targetValue = fillFraction,
+                    animationSpec = spring(stiffness = Spring.StiffnessVeryLow),
+                    label = "stepper_line_fill"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(animatedFillFraction)
+                        .height(4.dp)
+                        .background(GourmetPrimaryLight, RoundedCornerShape(2.dp))
+                )
+
+                // 3. Stage Nodes
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    stages.forEachIndexed { index, (shortLabel, icon, fullName) ->
+                        val isCompleted = index < activeIndex
+                        val isActive = index == activeIndex
+                        
+                        val nodeBg = when {
+                            isCompleted -> GourmetGreenBg
+                            isActive -> GourmetPeachLight
+                            else -> GourmetSlightGray
+                        }
+                        
+                        val nodeBorderColor = when {
+                            isCompleted -> GourmetGreenText
+                            isActive -> GourmetPrimaryLight
+                            else -> GourmetClayLight.copy(alpha = 0.5f)
+                        }
+                        
+                        val iconTint = when {
+                            isCompleted -> GourmetGreenText
+                            isActive -> GourmetPrimaryLight
+                            else -> GourmetSubtextLight.copy(alpha = 0.4f)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(nodeBg)
+                                .border(2.dp, nodeBorderColor, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isCompleted) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Check,
+                                    contentDescription = "Completed",
+                                    tint = GourmetGreenText,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = fullName,
+                                    tint = iconTint,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 4. Labels row below nodes
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                stages.forEachIndexed { index, (_, _, fullName) ->
+                    val isActive = index == activeIndex
+                    val isCompleted = index < activeIndex
+                    
+                    val textColor = when {
+                        isActive -> GourmetPrimaryLight
+                        isCompleted -> GourmetTextDark
+                        else -> GourmetSubtextLight.copy(alpha = 0.4f)
+                    }
+                    
+                    val fontWeight = when {
+                        isActive -> FontWeight.ExtraBold
+                        isCompleted -> FontWeight.SemiBold
+                        else -> FontWeight.Normal
+                    }
+
+                    Text(
+                        text = fullName,
+                        fontSize = 10.sp,
+                        fontWeight = fontWeight,
+                        color = textColor,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 12.sp,
+                        modifier = Modifier.width(68.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppleReviewsDialog(
+    viewModel: MainViewModel,
+    onDismiss: () -> Unit
+) {
+    val reviews by viewModel.allReviews.collectAsState()
+
+    // Form fields
+    var reviewerName by remember { mutableStateOf("") }
+    var reviewText by remember { mutableStateOf("") }
+    var reviewRating by remember { mutableStateOf(5) }
+    var showForm by remember { mutableStateOf(false) }
+    var submissionSuccess by remember { mutableStateOf(false) }
+
+    // Calculate rating details
+    val averageRating = if (reviews.isEmpty()) 0.0 else reviews.map { it.rating }.average()
+    val formattedAverage = String.format(Locale.US, "%.1f", averageRating)
+
+    // Proportions for stars 1 to 5
+    val totalReviews = reviews.size.coerceAtLeast(1)
+    val starCounts = IntArray(6) // index 1 to 5
+    for (r in reviews) {
+        if (r.rating in 1..5) {
+            starCounts[r.rating]++
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.85f)
+                .border(1.dp, GourmetClayLight.copy(alpha = 0.4f), RoundedCornerShape(28.dp))
+                .testTag("apple_reviews_dialog")
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp)
+            ) {
+                // Header Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Customer Reviews",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = GourmetTextDark
+                        )
+                        Text(
+                            text = "Dosa Idly Batter",
+                            fontSize = 13.sp,
+                            color = GourmetSubtextLight,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(GourmetSlightGray, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = GourmetTextDark,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Scrollable container for Reviews & Form
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Summary section
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = GourmetTanLight),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Left side average rating
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.weight(1.2f)
+                                ) {
+                                    Text(
+                                        text = formattedAverage,
+                                        fontSize = 44.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = GourmetTextDark,
+                                        lineHeight = 44.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "out of 5",
+                                        fontSize = 11.sp,
+                                        color = GourmetSubtextLight,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row {
+                                        repeat(5) { index ->
+                                            val active = index < Math.round(averageRating).toInt()
+                                            Icon(
+                                                imageVector = Icons.Rounded.Star,
+                                                contentDescription = null,
+                                                tint = if (active) Color(0xFFFFCC00) else GourmetClayLight.copy(alpha = 0.5f),
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "${reviews.size} Ratings",
+                                        fontSize = 11.sp,
+                                        color = GourmetSubtextLight
+                                    )
+                                }
+
+                                // Vertical Divider
+                                Box(
+                                    modifier = Modifier
+                                        .width(1.dp)
+                                        .height(70.dp)
+                                        .background(GourmetClayLight.copy(alpha = 0.3f))
+                                )
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                // Right side progress bars
+                                Column(modifier = Modifier.weight(2f)) {
+                                    (5 downTo 1).forEach { starIndex ->
+                                        val count = starCounts[starIndex]
+                                        val fraction = count.toFloat() / totalReviews.toFloat()
+
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(vertical = 1.dp)
+                                        ) {
+                                            Text(
+                                                text = starIndex.toString(),
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = GourmetSubtextLight,
+                                                modifier = Modifier.width(12.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(4.dp)
+                                                    .clip(RoundedCornerShape(2.dp))
+                                                    .background(GourmetClayLight.copy(alpha = 0.2f))
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth(fraction)
+                                                        .height(4.dp)
+                                                        .background(GourmetPrimaryLight, RoundedCornerShape(2.dp))
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Write Review section
+                    item {
+                        AnimatedVisibility(
+                            visible = !showForm && !submissionSuccess,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Button(
+                                onClick = { showForm = true },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = GourmetPeachLight),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("write_review_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.RateReview,
+                                    contentDescription = null,
+                                    tint = GourmetPrimaryLight,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Write a Customer Review",
+                                    fontWeight = FontWeight.Bold,
+                                    color = GourmetPrimaryLight,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+
+                        AnimatedVisibility(
+                            visible = submissionSuccess,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = GourmetGreenBg),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.CheckCircle,
+                                        contentDescription = "Success",
+                                        tint = GourmetGreenText,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = "Review Submitted!",
+                                            fontWeight = FontWeight.Bold,
+                                            color = GourmetGreenText,
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = "Thank you for sharing your feedback with us.",
+                                            fontSize = 12.sp,
+                                            color = GourmetGreenText.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        AnimatedVisibility(
+                            visible = showForm,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Card(
+                                shape = RoundedCornerShape(18.dp),
+                                colors = CardDefaults.cardColors(containerColor = GourmetSlightGray),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(1.dp, GourmetClayLight.copy(alpha = 0.3f), RoundedCornerShape(18.dp))
+                                    .testTag("write_review_form_card")
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Write Review",
+                                            fontWeight = FontWeight.Bold,
+                                            color = GourmetTextDark,
+                                            fontSize = 15.sp
+                                        )
+                                        IconButton(
+                                            onClick = { showForm = false },
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Cancel",
+                                                tint = GourmetSubtextLight,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    // Name Field
+                                    OutlinedTextField(
+                                        value = reviewerName,
+                                        onValueChange = { reviewerName = it },
+                                        placeholder = { Text("Your Name", fontSize = 13.sp) },
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedContainerColor = Color.White,
+                                            unfocusedContainerColor = Color.White,
+                                            focusedBorderColor = GourmetPrimaryLight,
+                                            unfocusedBorderColor = GourmetClayLight.copy(alpha = 0.5f),
+                                            focusedTextColor = GourmetTextDark,
+                                            unfocusedTextColor = GourmetTextDark
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("reviewer_name_input")
+                                    )
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    // Star Selector
+                                    Column {
+                                        Text(
+                                            text = "Select Rating",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = GourmetSubtextLight
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            repeat(5) { index ->
+                                                val starRatingValue = index + 1
+                                                val isSelected = starRatingValue <= reviewRating
+
+                                                val starScale by animateFloatAsState(
+                                                    targetValue = if (isSelected) 1.2f else 1.0f,
+                                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                                    label = "star_scale"
+                                                )
+
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Star,
+                                                    contentDescription = "$starRatingValue Star",
+                                                    tint = if (isSelected) Color(0xFFFFCC00) else GourmetClayLight.copy(alpha = 0.5f),
+                                                    modifier = Modifier
+                                                        .size(28.dp)
+                                                        .scale(starScale)
+                                                        .clickable { reviewRating = starRatingValue }
+                                                        .testTag("star_rating_$starRatingValue")
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    // Feedback Field
+                                    OutlinedTextField(
+                                        value = reviewText,
+                                        onValueChange = { reviewText = it },
+                                        placeholder = { Text("Share your experience with our fresh Dosa Idly Batter...", fontSize = 13.sp) },
+                                        minLines = 3,
+                                        maxLines = 5,
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedContainerColor = Color.White,
+                                            unfocusedContainerColor = Color.White,
+                                            focusedBorderColor = GourmetPrimaryLight,
+                                            unfocusedBorderColor = GourmetClayLight.copy(alpha = 0.5f),
+                                            focusedTextColor = GourmetTextDark,
+                                            unfocusedTextColor = GourmetTextDark
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("reviewer_feedback_input")
+                                    )
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    // Submit Button
+                                    Button(
+                                        onClick = {
+                                            if (reviewerName.isNotBlank() && reviewText.isNotBlank()) {
+                                                viewModel.submitReview(
+                                                    customerName = reviewerName,
+                                                    rating = reviewRating,
+                                                    feedback = reviewText
+                                                )
+                                                reviewerName = ""
+                                                reviewText = ""
+                                                reviewRating = 5
+                                                showForm = false
+                                                submissionSuccess = true
+                                            }
+                                        },
+                                        enabled = reviewerName.isNotBlank() && reviewText.isNotBlank(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = GourmetPrimaryLight,
+                                            disabledContainerColor = GourmetClayLight.copy(alpha = 0.5f)
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("submit_review_form_button")
+                                    ) {
+                                        Text(
+                                            text = "Post Review",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Divider title
+                    item {
+                        Text(
+                            text = "Customer Feedback",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GourmetTextDark,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    // If empty state
+                    if (reviews.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No reviews yet. Be the first to share your thoughts!",
+                                    fontSize = 13.sp,
+                                    color = GourmetSubtextLight,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    } else {
+                        // Display reviews list
+                        items(reviews) { review ->
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = GourmetSlightGray),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(1.dp, GourmetClayLight.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
+                                    .testTag("review_card_item")
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = review.customerName,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = GourmetTextDark
+                                        )
+                                        Text(
+                                            text = formatReviewDate(review.timestamp),
+                                            fontSize = 10.sp,
+                                            color = GourmetSubtextLight
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // Display stars for this review
+                                    Row {
+                                        repeat(5) { starIdx ->
+                                            Icon(
+                                                imageVector = Icons.Rounded.Star,
+                                                contentDescription = null,
+                                                tint = if (starIdx < review.rating) Color(0xFFFFCC00) else GourmetClayLight.copy(alpha = 0.4f),
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = review.feedback,
+                                        fontSize = 12.sp,
+                                        color = GourmetTextDark.copy(alpha = 0.9f),
+                                        lineHeight = 16.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun formatReviewDate(timestamp: Long): String {
+    val diff = System.currentTimeMillis() - timestamp
+    val seconds = diff / 1000
+    val minutes = seconds / 60
+    val hours = minutes / 60
+    val days = hours / 24
+
+    return when {
+        days > 0 -> "$days days ago"
+        hours > 0 -> "$hours hours ago"
+        minutes > 0 -> "$minutes mins ago"
+        else -> "Just now"
+    }
+}
+

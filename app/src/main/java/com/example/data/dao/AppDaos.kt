@@ -4,6 +4,7 @@ import androidx.room.*
 import com.example.data.model.BatterItem
 import com.example.data.model.CartItem
 import com.example.data.model.Order
+import com.example.data.model.Review
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -47,3 +48,19 @@ interface OrderDao {
     @Update
     suspend fun updateOrder(order: Order)
 }
+
+@Dao
+interface ReviewDao {
+    @Query("SELECT * FROM reviews WHERE itemId = :itemId ORDER BY timestamp DESC")
+    fun getReviewsForItem(itemId: String): Flow<List<Review>>
+
+    @Query("SELECT * FROM reviews ORDER BY timestamp DESC")
+    fun getAllReviews(): Flow<List<Review>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReview(review: Review)
+
+    @Query("DELETE FROM reviews")
+    suspend fun clearReviews()
+}
+

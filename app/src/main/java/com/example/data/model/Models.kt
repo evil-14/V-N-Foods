@@ -37,3 +37,14 @@ data class Order(
     val paymentCardLast4: String,
     val rating: Int = 0
 )
+
+@Entity(tableName = "reviews")
+data class Review(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val itemId: String, // e.g. "b1", "b2", "b3" or "dosa_idly_batter" to share among sizes
+    val customerName: String,
+    val rating: Int, // 1 to 5
+    val feedback: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+

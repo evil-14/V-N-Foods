@@ -7,15 +7,18 @@ import androidx.room.RoomDatabase
 import com.example.data.dao.BatterDao
 import com.example.data.dao.CartDao
 import com.example.data.dao.OrderDao
+import com.example.data.dao.ReviewDao
 import com.example.data.model.BatterItem
 import com.example.data.model.CartItem
 import com.example.data.model.Order
+import com.example.data.model.Review
 
-@Database(entities = [BatterItem::class, CartItem::class, Order::class], version = 1, exportSchema = false)
+@Database(entities = [BatterItem::class, CartItem::class, Order::class, Review::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun batterDao(): BatterDao
     abstract fun cartDao(): CartDao
     abstract fun orderDao(): OrderDao
+    abstract fun reviewDao(): ReviewDao
 
     companion object {
         @Volatile

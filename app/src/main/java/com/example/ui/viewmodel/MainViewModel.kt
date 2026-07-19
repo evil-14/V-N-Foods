@@ -7,6 +7,7 @@ import com.example.data.database.AppDatabase
 import com.example.data.model.BatterItem
 import com.example.data.model.CartItem
 import com.example.data.model.Order
+import com.example.data.model.Review
 import com.example.data.repository.AppRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -39,6 +40,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val allBatterItems: StateFlow<List<BatterItem>>
     val cartItems: StateFlow<List<CartItem>>
     val allOrders: StateFlow<List<Order>>
+    val allReviews: StateFlow<List<Review>>
 
     // Selected screen/tab
     private val _currentScreen = MutableStateFlow<Screen>(Screen.Shop)
@@ -72,7 +74,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         repository = AppRepository(
             database.batterDao(),
             database.cartDao(),
-            database.orderDao()
+            database.orderDao(),
+            database.reviewDao()
         )
 
         allBatterItems = repository.allBatterItems.stateIn(
@@ -93,6 +96,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             initialValue = emptyList()
         )
 
+        allReviews = repository.allReviews.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
         // Seed data if empty or outdated
         viewModelScope.launch {
             allBatterItems.first { true } // wait for first emission
@@ -101,6 +110,66 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (allBatterItems.value.isEmpty() || !hasDasaIdly) {
                 seedDefaultBatterItems()
             }
+        }
+
+        // Seed reviews if empty
+        viewModelScope.launch {
+            allReviews.first { true } // wait for first emission
+            delay(300)
+            if (allReviews.value.isEmpty()) {
+                seedDefaultReviews()
+            }
+        }
+    }
+
+    fun submitReview(customerName: String, rating: Int, feedback: String) {
+        viewModelScope.launch {
+            repository.insertReview(
+                Review(
+                    itemId = "dosa_idly_batter",
+                    customerName = customerName,
+                    rating = rating,
+                    feedback = feedback,
+                    timestamp = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    private suspend fun seedDefaultReviews() {
+        repository.clearReviews()
+        val defaultReviews = listOf(
+            Review(
+                itemId = "dosa_idly_batter",
+                customerName = "Ramesh Kumar",
+                rating = 5,
+                feedback = "Excellent quality batter. Naturally fermented and perfectly ground. The idlis were as soft as clouds!",
+                timestamp = System.currentTimeMillis() - 86400000 * 2 // 2 days ago
+            ),
+            Review(
+                itemId = "dosa_idly_batter",
+                customerName = "Anjali Sharma",
+                rating = 5,
+                feedback = "Dosas turned out extremely golden and crispy. Best batter in town, strictly premium and chemical free.",
+                timestamp = System.currentTimeMillis() - 86400000 * 5 // 5 days ago
+            ),
+            Review(
+                itemId = "dosa_idly_batter",
+                customerName = "Karthik Subbaraj",
+                rating = 4,
+                feedback = "Slightly sour but perfect for crispy dosas! Packaging is neat and spill-proof. Fast delivery too.",
+                timestamp = System.currentTimeMillis() - 86400000 * 8 // 8 days ago
+            ),
+            Review(
+                itemId = "dosa_idly_batter",
+                customerName = "Priya R.",
+                rating = 5,
+                feedback = "Tastes exactly like home-ground batter in a stone mortar. Very soft and aromatic. Highly recommended!",
+                timestamp = System.currentTimeMillis() - 86400000 * 12 // 12 days ago
+            )
+        )
+        for (review in defaultReviews) {
+            repository.insertReview(review)
         }
     }
 
