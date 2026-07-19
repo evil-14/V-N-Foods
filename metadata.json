@@ -1,0 +1,6 @@
+{
+  "name": "V&N Foods",
+  "description": "Premium batter and food delivery app with secure payment and real-time order tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
