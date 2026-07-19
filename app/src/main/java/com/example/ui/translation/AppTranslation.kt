@@ -148,7 +148,8 @@ object AppTranslation {
             "back_to_history" to "Back to Order History",
             "total_paid" to "Total Paid",
             "view_summary" to "View Summary",
-            "track_live" to "Track Live"
+            "track_live" to "Track Live",
+            "review_submitted_toast" to "Your rating and review have been received successfully!"
         ),
         "hi" to mapOf(
             "app_name" to "वी&एन फूड्स",
@@ -281,7 +282,8 @@ object AppTranslation {
             "back_to_history" to "ऑर्डर इतिहास पर वापस जाएं",
             "total_paid" to "कुल भुगतान",
             "view_summary" to "सारांश देखें",
-            "track_live" to "लाइव ट्रैक करें"
+            "track_live" to "लाइव ट्रैक करें",
+            "review_submitted_toast" to "आपकी रेटिंग और समीक्षा सफलतापूर्वक प्राप्त हो गई है!"
         ),
         "ta" to mapOf(
             "app_name" to "வி&என் ஃபுட்ஸ்",
@@ -414,7 +416,8 @@ object AppTranslation {
             "back_to_history" to "ஆர்டர் வரலாற்றுக்குத் திரும்பு",
             "total_paid" to "மொத்தம் செலுத்தப்பட்டது",
             "view_summary" to "சுருக்கத்தைக் காண்க",
-            "track_live" to "நேரடியாகக் கண்காணிக்கவும்"
+            "track_live" to "நேரடியாகக் கண்காணிக்கவும்",
+            "review_submitted_toast" to "உங்கள் மதிப்பீடு மற்றும் விமர்சனம் வெற்றிகரமாக பெறப்பட்டது!"
         ),
         "te" to mapOf(
             "app_name" to "వి&ఎన్ ఫుడ్స్",
@@ -547,7 +550,8 @@ object AppTranslation {
             "back_to_history" to "ఆర్డర్ హిస్టరీకి తిరిగి వెళ్ళు",
             "total_paid" to "మొత్తం చెల్లించారు",
             "view_summary" to "సారాంశం చూడండి",
-            "track_live" to "లైవ్ ట్రాక్ చేయండి"
+            "track_live" to "లైవ్ ట్రాక్ చేయండి",
+            "review_submitted_toast" to "మీ రేటింగ్ మరియు సమీక్ష విజయవంతంగా స్వీకరించబడ్డాయి!"
         ),
         "kn" to mapOf(
             "app_name" to "ವಿ&ಎನ್ ಫುಡ್ಸ್",
@@ -680,7 +684,8 @@ object AppTranslation {
             "back_to_history" to "ಆರ್ಡರ್ ಇತಿಹಾಸಕ್ಕೆ ಹಿಂತಿರುಗಿ",
             "total_paid" to "ಒಟ್ಟು ಪಾವತಿಸಲಾಗಿದೆ",
             "view_summary" to "ಸಾರಾಂಶ ವೀಕ್ಷಿಸಿ",
-            "track_live" to "ಲೈವ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ"
+            "track_live" to "ಲೈವ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ",
+            "review_submitted_toast" to "ನಿಮ್ಮ ರೇಟಿಂಗ್ ಮತ್ತು ವಿಮರ್ಶೆಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ!"
         ),
         "es" to mapOf(
             "app_name" to "V&N Foods",
@@ -813,7 +818,8 @@ object AppTranslation {
             "back_to_history" to "Volver al historial de pedidos",
             "total_paid" to "Total pagado",
             "view_summary" to "Ver resumen",
-            "track_live" to "Seguir en vivo"
+            "track_live" to "Seguir en vivo",
+            "review_submitted_toast" to "¡Su calificación y reseña han sido recibidas con éxito!"
         ),
         "fr" to mapOf(
             "app_name" to "V&N Foods",
@@ -946,7 +952,8 @@ object AppTranslation {
             "back_to_history" to "Retour à l'historique",
             "total_paid" to "Total payé",
             "view_summary" to "Voir le résumé",
-            "track_live" to "Suivi en direct"
+            "track_live" to "Suivi en direct",
+            "review_submitted_toast" to "Votre note et votre avis ont été reçus avec succès !"
         )
     )
 
@@ -1081,6 +1088,13 @@ object AppTranslation {
             "Total Paid" -> "total_paid"
             "View Summary" -> "view_summary"
             "Track Live" -> "track_live"
+            "Your rating and review have been received successfully!" -> "review_submitted_toast"
+            "Customer Feedback" -> "customer_feedback_label"
+            "Write Review" -> "write_review_label"
+            "Write a Customer Review" -> "write_customer_review_label"
+            "Review Submitted!" -> "review_submitted_label"
+            "Thank you for sharing your feedback with us." -> "thank_you_feedback_label"
+            "Post Review" -> "post_review_label"
             else -> null
         }
 

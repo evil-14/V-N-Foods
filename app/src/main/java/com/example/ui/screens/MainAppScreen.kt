@@ -88,7 +88,8 @@ fun MainAppScreen(viewModel: MainViewModel) {
             AppleBottomNavigation(
                 currentScreen = currentScreen,
                 onTabSelected = { viewModel.navigateTo(it) },
-                translate = { viewModel.translate(it) }
+                translate = { viewModel.translate(it) },
+                currentLanguage = currentLanguage
             )
         }
     ) { paddingValues ->
@@ -103,10 +104,10 @@ fun MainAppScreen(viewModel: MainViewModel) {
 
             Crossfade(targetState = currentScreen, label = "ScreenTransition") { screen ->
                 when (screen) {
-                    is Screen.Shop -> ShopTabScreen(viewModel)
-                    is Screen.Cart -> CartTabScreen(viewModel)
-                    is Screen.Orders -> OrdersTabScreen(viewModel, activeTrackOrderId)
-                    is Screen.Profile -> ProfileTabScreen(translate = { viewModel.translate(it) })
+                    is Screen.Shop -> ShopTabScreen(viewModel, currentLanguage)
+                    is Screen.Cart -> CartTabScreen(viewModel, currentLanguage)
+                    is Screen.Orders -> OrdersTabScreen(viewModel, activeTrackOrderId, currentLanguage)
+                    is Screen.Profile -> ProfileTabScreen(currentLanguage, translate = { viewModel.translate(it) })
                 }
             }
 
@@ -167,6 +168,7 @@ fun MainAppScreen(viewModel: MainViewModel) {
             ) {
                 CartDrawer(
                     viewModel = viewModel,
+                    currentLanguage = currentLanguage,
                     onDismiss = { viewModel.setCartDrawerOpen(false) }
                 )
             }
@@ -176,6 +178,7 @@ fun MainAppScreen(viewModel: MainViewModel) {
                 ApplePayBottomSheet(
                     viewModel = viewModel,
                     isProcessing = isProcessingPayment,
+                    currentLanguage = currentLanguage,
                     onDismiss = { viewModel.setApplePaySheetVisible(false) },
                     onConfirm = { viewModel.checkout("Apple Pay", "8824") }
                 )
@@ -245,7 +248,8 @@ fun MainAppScreen(viewModel: MainViewModel) {
 fun AppleBottomNavigation(
     currentScreen: Screen,
     onTabSelected: (Screen) -> Unit,
-    translate: (String) -> String
+    translate: (String) -> String,
+    currentLanguage: String
 ) {
     Surface(
         color = GourmetSlightGray,
@@ -356,7 +360,7 @@ fun BottomTabItem(
 // ---------------- SHOP TAB ----------------
 
 @Composable
-fun ShopTabScreen(viewModel: MainViewModel) {
+fun ShopTabScreen(viewModel: MainViewModel, currentLanguage: String) {
     val items by viewModel.allBatterItems.collectAsState()
     val cart by viewModel.cartItems.collectAsState()
     val reviews by viewModel.allReviews.collectAsState()
@@ -714,7 +718,7 @@ fun BatterCard(
 // ---------------- CART TAB ----------------
 
 @Composable
-fun CartTabScreen(viewModel: MainViewModel) {
+fun CartTabScreen(viewModel: MainViewModel, currentLanguage: String) {
     val cartDisplayList by viewModel.cartDisplayItems.collectAsState()
     val summary by viewModel.cartSummary.collectAsState()
 
@@ -1559,6 +1563,7 @@ private fun formatExpiry(clean: String): String {
 fun ApplePayBottomSheet(
     viewModel: MainViewModel,
     isProcessing: Boolean,
+    currentLanguage: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -1672,7 +1677,8 @@ fun ApplePayBottomSheet(
 @Composable
 fun OrdersTabScreen(
     viewModel: MainViewModel,
-    activeTrackOrderId: String?
+    activeTrackOrderId: String?,
+    currentLanguage: String
 ) {
     val orders by viewModel.allOrders.collectAsState()
 
@@ -2458,7 +2464,7 @@ fun OrderHistoryItem(
 // ---------------- PROFILE / INFORMATION TAB ----------------
 
 @Composable
-fun ProfileTabScreen(translate: (String) -> String) {
+fun ProfileTabScreen(currentLanguage: String, translate: (String) -> String) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -2606,6 +2612,7 @@ fun ProfileFeatureRow(
 @Composable
 fun CartDrawer(
     viewModel: MainViewModel,
+    currentLanguage: String,
     onDismiss: () -> Unit
 ) {
     val cartDisplayList by viewModel.cartDisplayItems.collectAsState()
@@ -3089,6 +3096,7 @@ fun AppleReviewsDialog(
     onDismiss: () -> Unit
 ) {
     val reviews by viewModel.allReviews.collectAsState()
+    val context = LocalContext.current
 
     // Form fields
     var reviewerName by remember { mutableStateOf("") }
@@ -3133,7 +3141,7 @@ fun AppleReviewsDialog(
                 ) {
                     Column {
                         Text(
-                            text = "Customer Reviews",
+                            text = viewModel.translate("Customer Reviews"),
                             fontSize = 22.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = GourmetTextDark
@@ -3293,7 +3301,7 @@ fun AppleReviewsDialog(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Write a Customer Review",
+                                    text = viewModel.translate("Write a Customer Review"),
                                     fontWeight = FontWeight.Bold,
                                     color = GourmetPrimaryLight,
                                     fontSize = 13.sp
@@ -3326,13 +3334,13 @@ fun AppleReviewsDialog(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         Text(
-                                            text = "Review Submitted!",
+                                            text = viewModel.translate("Review Submitted!"),
                                             fontWeight = FontWeight.Bold,
                                             color = GourmetGreenText,
                                             fontSize = 14.sp
                                         )
                                         Text(
-                                            text = "Thank you for sharing your feedback with us.",
+                                            text = viewModel.translate("Thank you for sharing your feedback with us."),
                                             fontSize = 12.sp,
                                             color = GourmetGreenText.copy(alpha = 0.8f)
                                         )
@@ -3363,7 +3371,7 @@ fun AppleReviewsDialog(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "Write Review",
+                                            text = viewModel.translate("Write Review"),
                                             fontWeight = FontWeight.Bold,
                                             color = GourmetTextDark,
                                             fontSize = 15.sp
@@ -3476,6 +3484,10 @@ fun AppleReviewsDialog(
                                                     rating = reviewRating,
                                                     feedback = reviewText
                                                 )
+                                                // Show Toast indicating rating has been received successfully
+                                                val toastMsg = viewModel.translate("Your rating and review have been received successfully!")
+                                                Toast.makeText(context, toastMsg, Toast.LENGTH_LONG).show()
+
                                                 reviewerName = ""
                                                 reviewText = ""
                                                 reviewRating = 5
@@ -3494,7 +3506,7 @@ fun AppleReviewsDialog(
                                             .testTag("submit_review_form_button")
                                     ) {
                                         Text(
-                                            text = "Post Review",
+                                            text = viewModel.translate("Post Review"),
                                             color = Color.White,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 14.sp
@@ -3508,7 +3520,7 @@ fun AppleReviewsDialog(
                     // Divider title
                     item {
                         Text(
-                            text = "Customer Feedback",
+                            text = viewModel.translate("Customer Feedback"),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = GourmetTextDark,
