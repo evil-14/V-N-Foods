@@ -69,6 +69,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _paymentSuccess = MutableStateFlow(false)
     val paymentSuccess: StateFlow<Boolean> = _paymentSuccess.asStateFlow()
 
+    // Google Translate / Multi-language support state
+    private val _currentLanguage = MutableStateFlow("en")
+    val currentLanguage: StateFlow<String> = _currentLanguage.asStateFlow()
+
+    fun setLanguage(langCode: String) {
+        _currentLanguage.value = langCode
+    }
+
+    fun translate(text: String): String {
+        return com.example.ui.translation.AppTranslation.translateDynamic(text, _currentLanguage.value)
+    }
+
     init {
         val database = AppDatabase.getDatabase(application)
         repository = AppRepository(

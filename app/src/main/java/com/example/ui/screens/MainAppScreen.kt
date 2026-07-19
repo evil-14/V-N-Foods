@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.R
 import com.example.ui.theme.*
+import com.example.ui.translation.AppTranslation
 import com.example.data.model.BatterItem
 import com.example.data.model.Order
 import com.example.ui.viewmodel.CartDisplayItem
@@ -62,14 +63,32 @@ fun MainAppScreen(viewModel: MainViewModel) {
     val showApplePay by viewModel.showApplePaySheet.collectAsState()
     val isProcessingPayment by viewModel.isProcessingPayment.collectAsState()
     val paymentSuccess by viewModel.paymentSuccess.collectAsState()
+    val currentLanguage by viewModel.currentLanguage.collectAsState()
+    var showTranslateDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
+    if (showTranslateDialog) {
+        GoogleTranslateDialog(
+            viewModel = viewModel,
+            currentLanguage = currentLanguage,
+            onDismiss = { showTranslateDialog = false }
+        )
+    }
+
     Scaffold(
+        topBar = {
+            GoogleTranslateTopBar(
+                viewModel = viewModel,
+                currentLanguage = currentLanguage,
+                onTranslateClick = { showTranslateDialog = true }
+            )
+        },
         bottomBar = {
             AppleBottomNavigation(
                 currentScreen = currentScreen,
-                onTabSelected = { viewModel.navigateTo(it) }
+                onTabSelected = { viewModel.navigateTo(it) },
+                translate = { viewModel.translate(it) }
             )
         }
     ) { paddingValues ->
@@ -87,7 +106,7 @@ fun MainAppScreen(viewModel: MainViewModel) {
                     is Screen.Shop -> ShopTabScreen(viewModel)
                     is Screen.Cart -> CartTabScreen(viewModel)
                     is Screen.Orders -> OrdersTabScreen(viewModel, activeTrackOrderId)
-                    is Screen.Profile -> ProfileTabScreen()
+                    is Screen.Profile -> ProfileTabScreen(translate = { viewModel.translate(it) })
                 }
             }
 
@@ -225,7 +244,8 @@ fun MainAppScreen(viewModel: MainViewModel) {
 @Composable
 fun AppleBottomNavigation(
     currentScreen: Screen,
-    onTabSelected: (Screen) -> Unit
+    onTabSelected: (Screen) -> Unit,
+    translate: (String) -> String
 ) {
     Surface(
         color = GourmetSlightGray,
@@ -248,7 +268,7 @@ fun AppleBottomNavigation(
             verticalAlignment = Alignment.CenterVertically
         ) {
             BottomTabItem(
-                label = "Shop",
+                label = translate("Shop"),
                 iconSelected = Icons.Rounded.Storefront,
                 iconUnselected = Icons.Outlined.Storefront,
                 isSelected = currentScreen is Screen.Shop,
@@ -256,7 +276,7 @@ fun AppleBottomNavigation(
                 tag = "tab_shop"
             )
             BottomTabItem(
-                label = "Cart",
+                label = translate("Cart"),
                 iconSelected = Icons.Rounded.ShoppingCart,
                 iconUnselected = Icons.Outlined.ShoppingCart,
                 isSelected = currentScreen is Screen.Cart,
@@ -264,7 +284,7 @@ fun AppleBottomNavigation(
                 tag = "tab_cart"
             )
             BottomTabItem(
-                label = "Orders",
+                label = translate("Orders"),
                 iconSelected = Icons.Rounded.DirectionsRun,
                 iconUnselected = Icons.Outlined.DirectionsRun,
                 isSelected = currentScreen is Screen.Orders,
@@ -272,7 +292,7 @@ fun AppleBottomNavigation(
                 tag = "tab_orders"
             )
             BottomTabItem(
-                label = "About",
+                label = translate("About"),
                 iconSelected = Icons.Rounded.Info,
                 iconUnselected = Icons.Outlined.Info,
                 isSelected = currentScreen is Screen.Profile,
@@ -368,7 +388,7 @@ fun ShopTabScreen(viewModel: MainViewModel) {
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.img_vn_hero_1784440500402),
-                    contentDescription = "V&N Foods Hero",
+                    contentDescription = viewModel.translate("V&N Foods") + " Hero",
                     modifier = Modifier.fillMaxSize(),
                     alignment = Alignment.Center,
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
@@ -396,7 +416,7 @@ fun ShopTabScreen(viewModel: MainViewModel) {
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "ESTD 2026",
+                            text = viewModel.translate("ESTD 2026"),
                             fontSize = 10.sp,
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
@@ -405,14 +425,14 @@ fun ShopTabScreen(viewModel: MainViewModel) {
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "V&N Foods",
+                        text = viewModel.translate("V&N Foods"),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
                         letterSpacing = (-0.5).sp
                     )
                     Text(
-                        text = "Premium stone-ground natural batters & sides",
+                        text = viewModel.translate("Freshly fermented, stone-ground gourmet idli & dosa batters delivered to your doorstep daily."),
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.85f)
                     )
@@ -424,7 +444,7 @@ fun ShopTabScreen(viewModel: MainViewModel) {
         item {
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "Select Category",
+                text = viewModel.translate("Select Category"),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -454,7 +474,7 @@ fun ShopTabScreen(viewModel: MainViewModel) {
                             .padding(horizontal = 18.dp, vertical = 10.dp)
                     ) {
                         Text(
-                            text = category,
+                            text = viewModel.translate(category),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
@@ -468,7 +488,7 @@ fun ShopTabScreen(viewModel: MainViewModel) {
         // Section Title
         item {
             Text(
-                text = "Our Fresh Batters & Sides",
+                text = viewModel.translate("Our Fresh Batters & Sides"),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -489,7 +509,7 @@ fun ShopTabScreen(viewModel: MainViewModel) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No items available in this category.",
+                        text = viewModel.translate("No items available in this category."),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
@@ -503,7 +523,8 @@ fun ShopTabScreen(viewModel: MainViewModel) {
                     onAdd = { viewModel.addToCart(batterItem.id, 1) },
                     onSubtract = { viewModel.addToCart(batterItem.id, -1) },
                     reviewCount = reviews.size,
-                    onReviewsClick = { showReviewsDialog = true }
+                    onReviewsClick = { showReviewsDialog = true },
+                    translate = { viewModel.translate(it) }
                 )
             }
         }
@@ -517,7 +538,8 @@ fun BatterCard(
     onAdd: () -> Unit,
     onSubtract: () -> Unit,
     reviewCount: Int,
-    onReviewsClick: () -> Unit
+    onReviewsClick: () -> Unit,
+    translate: (String) -> String
 ) {
     Card(
         shape = RoundedCornerShape(18.dp),
@@ -550,7 +572,7 @@ fun BatterCard(
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    "BESTSELLER",
+                                    translate("Bestseller").uppercase(),
                                     fontSize = 8.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -573,7 +595,7 @@ fun BatterCard(
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = item.name,
+                        text = translate(item.name),
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -588,7 +610,7 @@ fun BatterCard(
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = item.description,
+                text = translate(item.description),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 maxLines = 2,
@@ -617,7 +639,7 @@ fun BatterCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "${item.rating} • ($reviewCount reviews)",
+                            text = "${item.rating} • ($reviewCount ${translate("Reviews").lowercase()})",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = GourmetPrimaryLight,
@@ -633,7 +655,7 @@ fun BatterCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = item.prepTime,
+                        text = translate(item.prepTime),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
@@ -681,7 +703,7 @@ fun BatterCard(
                     ) {
                         Icon(Icons.Rounded.Add, "Add", modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(translate("Add to Cart"), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -696,7 +718,25 @@ fun CartTabScreen(viewModel: MainViewModel) {
     val cartDisplayList by viewModel.cartDisplayItems.collectAsState()
     val summary by viewModel.cartSummary.collectAsState()
 
-    var showCardPayment by remember { mutableStateOf(false) }
+    var selectedPaymentMethod by remember { mutableStateOf("UPI") } // "UPI" or "COD"
+    var qrSeed by remember { mutableStateOf(System.currentTimeMillis()) }
+    var txnId by remember { mutableStateOf("TXN" + System.currentTimeMillis().toString().takeLast(8)) }
+    var remainingSeconds by remember { mutableStateOf(120) }
+
+    val onRefresh = {
+        qrSeed = System.currentTimeMillis()
+        txnId = "TXN" + System.currentTimeMillis().toString().takeLast(8)
+    }
+
+    LaunchedEffect(qrSeed) {
+        remainingSeconds = 120
+        while (remainingSeconds > 0) {
+            delay(1000)
+            remainingSeconds--
+        }
+        qrSeed = System.currentTimeMillis()
+        txnId = "TXN" + System.currentTimeMillis().toString().takeLast(8)
+    }
 
     Column(
         modifier = Modifier
@@ -710,7 +750,7 @@ fun CartTabScreen(viewModel: MainViewModel) {
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Text(
-                text = "Shopping Cart",
+                text = viewModel.translate("Shopping Cart"),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -718,7 +758,7 @@ fun CartTabScreen(viewModel: MainViewModel) {
             )
             if (cartDisplayList.isNotEmpty()) {
                 Text(
-                    text = "Clear Cart",
+                    text = viewModel.translate("Clear Cart"),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
@@ -752,14 +792,14 @@ fun CartTabScreen(viewModel: MainViewModel) {
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Your cart is empty",
+                        text = viewModel.translate("Your cart is empty"),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Browse our shop and pick fresh batters!",
+                        text = viewModel.translate("Browse our shop and pick fresh batters!"),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
@@ -769,7 +809,7 @@ fun CartTabScreen(viewModel: MainViewModel) {
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Start Shopping", fontWeight = FontWeight.Bold)
+                        Text(viewModel.translate("Start Shopping"), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -785,13 +825,14 @@ fun CartTabScreen(viewModel: MainViewModel) {
                         displayItem = displayItem,
                         onAdd = { viewModel.addToCart(displayItem.item.id, 1) },
                         onSubtract = { viewModel.addToCart(displayItem.item.id, -1) },
-                        onRemove = { viewModel.removeFromCart(displayItem.item.id) }
+                        onRemove = { viewModel.removeFromCart(displayItem.item.id) },
+                        translate = { viewModel.translate(it) }
                     )
                 }
 
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
-                    OrderSummaryCard(summary = summary)
+                    OrderSummaryCard(summary = summary, translate = { viewModel.translate(it) })
                 }
 
                 item {
@@ -812,7 +853,7 @@ fun CartTabScreen(viewModel: MainViewModel) {
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            "Secured and processed via V&N Encrypted Gateway",
+                            viewModel.translate("Secured and processed via V&N Encrypted Gateway"),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF34C759)
@@ -823,18 +864,29 @@ fun CartTabScreen(viewModel: MainViewModel) {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     PaymentSelectionToggle(
-                        showCardPayment = showCardPayment,
-                        onToggle = { showCardPayment = it }
+                        selectedMethod = selectedPaymentMethod,
+                        onSelect = { selectedPaymentMethod = it },
+                        translate = { viewModel.translate(it) }
                     )
                 }
 
-                if (showCardPayment) {
+                if (selectedPaymentMethod == "UPI") {
                     item {
-                        CardPaymentSection(viewModel = viewModel, summary = summary)
+                        UpiPaymentSection(
+                            viewModel = viewModel,
+                            summary = summary,
+                            qrSeed = qrSeed,
+                            txnId = txnId,
+                            remainingSeconds = remainingSeconds,
+                            onRefresh = onRefresh
+                        )
                     }
                 } else {
                     item {
-                        ApplePayButton(onClick = { viewModel.setApplePaySheetVisible(true) })
+                        CodPaymentSection(
+                            viewModel = viewModel,
+                            summary = summary
+                        )
                     }
                 }
             }
@@ -847,7 +899,8 @@ fun CartItemCard(
     displayItem: CartDisplayItem,
     onAdd: () -> Unit,
     onSubtract: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    translate: (String) -> String
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -869,7 +922,7 @@ fun CartItemCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = displayItem.item.name,
+                    text = translate(displayItem.item.name),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -877,14 +930,14 @@ fun CartItemCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = displayItem.item.size,
+                        text = translate(displayItem.item.size),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "₹${String.format(Locale.US, "%.2f", displayItem.item.price)} each",
+                        text = "₹${String.format(Locale.US, "%.2f", displayItem.item.price)} " + translate("each"),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
@@ -937,7 +990,7 @@ fun CartItemCard(
 }
 
 @Composable
-fun OrderSummaryCard(summary: CartSummary) {
+fun OrderSummaryCard(summary: CartSummary, translate: (String) -> String) {
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -952,26 +1005,26 @@ fun OrderSummaryCard(summary: CartSummary) {
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Text(
-                text = "Order Summary",
+                text = translate("Order Summary"),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(14.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Subtotal", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                Text(translate("Subtotal"), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 Text("₹${String.format(Locale.US, "%.2f", summary.subtotal)}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Tax (5%)", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                Text(translate("Tax") + " (5%)", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 Text("₹${String.format(Locale.US, "%.2f", summary.tax)}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Delivery Fee", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                Text(translate("Delivery Fee"), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 Text(
-                    text = if (summary.deliveryFee == 0.0) "FREE" else "₹${String.format(Locale.US, "%.2f", summary.deliveryFee)}",
+                    text = if (summary.deliveryFee == 0.0) translate("FREE") else "₹${String.format(Locale.US, "%.2f", summary.deliveryFee)}",
                     fontSize = 14.sp,
                     fontWeight = if (summary.deliveryFee == 0.0) FontWeight.Bold else FontWeight.Normal,
                     color = if (summary.deliveryFee == 0.0) Color(0xFF34C759) else MaterialTheme.colorScheme.onSurface
@@ -986,7 +1039,7 @@ fun OrderSummaryCard(summary: CartSummary) {
                         .padding(8.dp)
                 ) {
                     Text(
-                        "Add ₹${String.format(Locale.US, "%.2f", 15.0 - summary.subtotal)} more to qualify for FREE delivery!",
+                        translate("Add") + " ₹${String.format(Locale.US, "%.2f", 15.0 - summary.subtotal)} " + translate("more to qualify for FREE delivery!"),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
@@ -999,7 +1052,7 @@ fun OrderSummaryCard(summary: CartSummary) {
             Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Total Amount", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(translate("Total Amount"), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Text(
                     text = "₹${String.format(Locale.US, "%.2f", summary.total)}",
                     fontSize = 20.sp,
@@ -1013,8 +1066,9 @@ fun OrderSummaryCard(summary: CartSummary) {
 
 @Composable
 fun PaymentSelectionToggle(
-    showCardPayment: Boolean,
-    onToggle: (Boolean) -> Unit
+    selectedMethod: String,
+    onSelect: (String) -> Unit,
+    translate: (String) -> String
 ) {
     Row(
         modifier = Modifier
@@ -1029,24 +1083,25 @@ fun PaymentSelectionToggle(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(8.dp))
-                .background(if (!showCardPayment) MaterialTheme.colorScheme.primary else Color.Transparent)
-                .clickable { onToggle(false) }
-                .padding(vertical = 10.dp),
+                .background(if (selectedMethod == "UPI") GourmetPrimaryLight else Color.Transparent)
+                .clickable { onSelect("UPI") }
+                .padding(vertical = 10.dp)
+                .testTag("pay_toggle_upi"),
             contentAlignment = Alignment.Center
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Rounded.Fingerprint,
-                    contentDescription = "Apple",
-                    tint = if (!showCardPayment) Color.White else MaterialTheme.colorScheme.onSurface,
+                    imageVector = Icons.Rounded.QrCode,
+                    contentDescription = "UPI QR",
+                    tint = if (selectedMethod == "UPI") Color.White else GourmetTextDark,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    "Apple Pay",
+                    translate("UPI QR Pay"),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (!showCardPayment) Color.White else MaterialTheme.colorScheme.onSurface
+                    color = if (selectedMethod == "UPI") Color.White else GourmetTextDark
                 )
             }
         }
@@ -1054,253 +1109,427 @@ fun PaymentSelectionToggle(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(8.dp))
-                .background(if (showCardPayment) MaterialTheme.colorScheme.primary else Color.Transparent)
-                .clickable { onToggle(true) }
-                .padding(vertical = 10.dp),
+                .background(if (selectedMethod == "COD") GourmetPrimaryLight else Color.Transparent)
+                .clickable { onSelect("COD") }
+                .padding(vertical = 10.dp)
+                .testTag("pay_toggle_cod"),
             contentAlignment = Alignment.Center
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Rounded.CreditCard,
-                    contentDescription = "Card",
-                    tint = if (showCardPayment) Color.White else MaterialTheme.colorScheme.onSurface,
+                    imageVector = Icons.Rounded.LocalShipping,
+                    contentDescription = "COD",
+                    tint = if (selectedMethod == "COD") Color.White else GourmetTextDark,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    "Credit Card",
+                    translate("Cash on Delivery"),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (showCardPayment) Color.White else MaterialTheme.colorScheme.onSurface
+                    color = if (selectedMethod == "COD") Color.White else GourmetTextDark
                 )
             }
         }
     }
 }
 
+fun generateQrMatrix(seed: Long): Array<BooleanArray> {
+    val size = 21
+    val matrix = Array(size) { BooleanArray(size) }
+    val random = java.util.Random(seed)
+
+    // Fill with random noise first
+    for (r in 0 until size) {
+        for (c in 0 until size) {
+            matrix[r][c] = random.nextBoolean()
+        }
+    }
+
+    // Draw Finder Patterns (7x7)
+    fun drawFinder(rowOffset: Int, colOffset: Int) {
+        for (r in 0..6) {
+            for (c in 0..6) {
+                val realR = rowOffset + r
+                val realC = colOffset + c
+                val isOuterBorder = r == 0 || r == 6 || c == 0 || c == 6
+                val isCenter = r in 2..4 && c in 2..4
+                matrix[realR][realC] = isOuterBorder || isCenter
+            }
+        }
+    }
+
+    // Top-Left Finder
+    drawFinder(0, 0)
+    // Top-Right Finder
+    drawFinder(0, size - 7)
+    // Bottom-Left Finder
+    drawFinder(size - 7, 0)
+
+    // Clear a 5x5 area in the center for the UPI badge
+    val centerStart = size / 2 - 2
+    val centerEnd = size / 2 + 2
+    for (r in centerStart..centerEnd) {
+        for (c in centerStart..centerEnd) {
+            matrix[r][c] = false
+        }
+    }
+
+    return matrix
+}
+
 @Composable
-fun ApplePayButton(onClick: () -> Unit) {
+fun GourmetQRCode(
+    seed: Long,
+    modifier: Modifier = Modifier
+) {
+    val matrix = remember(seed) { generateQrMatrix(seed) }
+    
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.Black)
-            .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
+        modifier = modifier
+            .size(180.dp)
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .border(1.dp, GourmetClayLight.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+            .padding(12.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Rounded.Fingerprint,
-                contentDescription = "Pay",
-                tint = Color.White,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            val size = 21
+            val cellSize = this.size.width / size
+            
+            for (r in 0 until size) {
+                for (c in 0 until size) {
+                    val centerStart = size / 2 - 2
+                    val centerEnd = size / 2 + 2
+                    if (r in centerStart..centerEnd && c in centerStart..centerEnd) {
+                        continue
+                    }
+                    
+                    if (matrix[r][c]) {
+                        drawRect(
+                            color = GourmetTextDark,
+                            topLeft = Offset(c * cellSize, r * cellSize),
+                            size = androidx.compose.ui.geometry.Size(cellSize + 0.5f, cellSize + 0.5f)
+                        )
+                    }
+                }
+            }
+        }
+        
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .background(Color.White, RoundedCornerShape(4.dp))
+                .border(1.5.dp, GourmetPrimaryLight, RoundedCornerShape(4.dp)),
+            contentAlignment = Alignment.Center
+        ) {
             Text(
-                text = "Pay with Apple Pay",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+                text = "UPI",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                color = GourmetPrimaryLight
             )
         }
     }
 }
 
 @Composable
-fun CardPaymentSection(
+fun UpiPaymentSection(
+    viewModel: MainViewModel,
+    summary: CartSummary,
+    qrSeed: Long,
+    txnId: String,
+    remainingSeconds: Int,
+    onRefresh: () -> Unit
+) {
+    val isProcessing by viewModel.isProcessingPayment.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = GourmetSlightGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = viewModel.translate("V&N Foods").uppercase() + " PVT LTD",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = GourmetSubtextLight,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "vn.foods@upi",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GourmetTextDark
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Divider(color = GourmetClayLight.copy(alpha = 0.2f))
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = viewModel.translate("Amount to Pay"),
+                    fontSize = 12.sp,
+                    color = GourmetSubtextLight,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "₹${String.format(Locale.US, "%.2f", summary.total)}",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = GourmetPrimaryLight
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                GourmetQRCode(seed = qrSeed)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val minutesStr = (remainingSeconds / 60).toString().padStart(2, '0')
+                val secondsStr = (remainingSeconds % 60).toString().padStart(2, '0')
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .background(GourmetPeachLight, RoundedCornerShape(100.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.AccessTime,
+                        contentDescription = "Timer",
+                        tint = GourmetPrimaryLight,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = viewModel.translate("QR Code refreshes in") + " $minutesStr:$secondsStr",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GourmetPrimaryLight
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = onRefresh,
+                        modifier = Modifier.size(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Refresh,
+                            contentDescription = viewModel.translate("Refresh Now"),
+                            tint = GourmetPrimaryLight,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = viewModel.translate("Ref ID") + ": $txnId",
+                    fontSize = 11.sp,
+                    color = GourmetSubtextLight,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = { viewModel.checkout("UPI", "QR-Pay") },
+            enabled = !isProcessing,
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = GourmetPrimaryLight),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .testTag("upi_checkout_button")
+        ) {
+            if (isProcessing) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(viewModel.translate("Verifying UPI Payment..."), fontWeight = FontWeight.Bold)
+            } else {
+                Icon(
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = viewModel.translate("I Have Paid • Verify & Order"),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Lock,
+                contentDescription = null,
+                tint = GourmetGreenText,
+                modifier = Modifier.size(12.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = viewModel.translate("Secure UPI Auto-Verification Active"),
+                fontSize = 11.sp,
+                color = GourmetGreenText,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun CodPaymentSection(
     viewModel: MainViewModel,
     summary: CartSummary
 ) {
-    val cardNumber by viewModel.cardNumber.collectAsState()
-    val cardExpiry by viewModel.cardExpiry.collectAsState()
-    val cardCvv by viewModel.cardCvv.collectAsState()
-    val cardHolder by viewModel.cardHolder.collectAsState()
     val isProcessing by viewModel.isProcessingPayment.collectAsState()
-
-    val isFormValid = cardNumber.length >= 16 && cardExpiry.length >= 4 && cardCvv.length >= 3 && cardHolder.isNotBlank()
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // Virtual Apple Card Display
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(Color(0xFFE5E5EA), Color(0xFFAEAEB2)),
-                        start = Offset(0f, 0f),
-                        end = Offset(400f, 400f)
-                    )
-                )
-                .padding(20.dp)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = GourmetSlightGray),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(GourmetPeachLight, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.LocalShipping,
+                            contentDescription = "COD Icon",
+                            tint = GourmetPrimaryLight,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        "V&N SecurePay Card",
-                        color = Color.Black,
-                        fontSize = 12.sp,
+                        text = viewModel.translate("Cash on Delivery") + " (COD)",
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                    Icon(
-                        imageVector = Icons.Rounded.VerifiedUser,
-                        contentDescription = "Secure",
-                        tint = Color.Black,
-                        modifier = Modifier.size(20.dp)
+                        color = GourmetTextDark
                     )
                 }
 
+                Spacer(modifier = Modifier.height(14.dp))
+                Divider(color = GourmetClayLight.copy(alpha = 0.2f))
+                Spacer(modifier = Modifier.height(14.dp))
+
                 Text(
-                    text = if (cardNumber.isBlank()) "•••• •••• •••• ••••" else formatCardNumber(cardNumber),
-                    fontSize = 20.sp,
-                    fontFamily = FontFamily.Monospace,
+                    text = viewModel.translate("Terms & Instructions:"),
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black.copy(alpha = 0.85f),
-                    letterSpacing = 2.sp
+                    color = GourmetTextDark
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                
+                val bulletPoints = listOf(
+                    "Pay only after receiving your order at your doorstep.",
+                    "Our delivery partner accepts cash or instant UPI scan.",
+                    "No extra handling/COD processing fee applied."
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("CARD HOLDER", fontSize = 8.sp, color = Color.Black.copy(alpha = 0.5f), fontWeight = FontWeight.Bold)
+                bulletPoints.forEach { point ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 3.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
                         Text(
-                            text = if (cardHolder.isBlank()) "YOUR NAME" else cardHolder.uppercase(),
+                            text = "• ",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = GourmetPrimaryLight
                         )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("EXPIRES", fontSize = 8.sp, color = Color.Black.copy(alpha = 0.5f), fontWeight = FontWeight.Bold)
                         Text(
-                            text = if (cardExpiry.isBlank()) "MM/YY" else formatExpiry(cardExpiry),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            text = viewModel.translate(point),
+                            fontSize = 12.sp,
+                            color = GourmetSubtextLight,
+                            lineHeight = 16.sp
                         )
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Card Fields
-        OutlinedTextField(
-            value = cardHolder,
-            onValueChange = { if (it.length <= 30) viewModel.cardHolder.value = it },
-            label = { Text("Cardholder Name") },
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-            ),
-            singleLine = true,
-            enabled = !isProcessing
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        OutlinedTextField(
-            value = cardNumber,
-            onValueChange = { input ->
-                val clean = input.filter { it.isDigit() }
-                if (clean.length <= 16) viewModel.cardNumber.value = clean
-            },
-            label = { Text("Card Number") },
-            shape = RoundedCornerShape(10.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-            ),
-            singleLine = true,
-            enabled = !isProcessing
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            OutlinedTextField(
-                value = cardExpiry,
-                onValueChange = { input ->
-                    val clean = input.filter { it.isDigit() }
-                    if (clean.length <= 4) viewModel.cardExpiry.value = clean
-                },
-                label = { Text("Expiry (MMYY)") },
-                shape = RoundedCornerShape(10.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                ),
-                singleLine = true,
-                enabled = !isProcessing
-            )
-
-            OutlinedTextField(
-                value = cardCvv,
-                onValueChange = { input ->
-                    val clean = input.filter { it.isDigit() }
-                    if (clean.length <= 4) viewModel.cardCvv.value = clean
-                },
-                label = { Text("CVV") },
-                shape = RoundedCornerShape(10.dp),
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                ),
-                singleLine = true,
-                enabled = !isProcessing
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = {
-                val last4 = if (cardNumber.length >= 4) cardNumber.substring(cardNumber.length - 4) else "9921"
-                viewModel.checkout("V&N SecurePay", last4)
-            },
-            enabled = isFormValid && !isProcessing,
+            onClick = { viewModel.checkout("Cash on Delivery", "COD") },
+            enabled = !isProcessing,
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = GourmetPrimaryLight),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                .height(48.dp)
+                .testTag("cod_checkout_button")
         ) {
             if (isProcessing) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Securing Payment...", fontWeight = FontWeight.Bold)
+                Text(viewModel.translate("Placing Order..."), fontWeight = FontWeight.Bold)
             } else {
-                Text("Securely Pay ₹${String.format(Locale.US, "%.2f", summary.total)}", fontWeight = FontWeight.Bold)
+                Icon(
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = viewModel.translate("Confirm & Place COD Order"),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -1454,7 +1683,7 @@ fun OrdersTabScreen(
     ) {
         // Toolbar
         Text(
-            text = "Track Delivery",
+            text = viewModel.translate("Track Delivery"),
             fontSize = 24.sp,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -1464,7 +1693,11 @@ fun OrdersTabScreen(
         val activeOrder = orders.find { it.orderId == activeTrackOrderId }
 
         if (activeOrder != null) {
-            ActiveOrderTrackingCard(order = activeOrder, onDismiss = { viewModel.setTrackingOrderId(null) })
+            ActiveOrderTrackingCard(
+                order = activeOrder,
+                translate = { viewModel.translate(it) },
+                onDismiss = { viewModel.setTrackingOrderId(null) }
+            )
         } else if (orders.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -1488,14 +1721,14 @@ fun OrdersTabScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "No active orders",
+                        text = viewModel.translate("No active orders"),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Place an order to see real-time delivery tracking!",
+                        text = viewModel.translate("Place an order to see real-time delivery tracking!"),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
@@ -1511,7 +1744,7 @@ fun OrdersTabScreen(
             ) {
                 item {
                     Text(
-                        text = "History & Previous Orders",
+                        text = viewModel.translate("History & Previous Orders"),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -1519,7 +1752,11 @@ fun OrdersTabScreen(
                     )
                 }
                 items(orders) { order ->
-                    OrderHistoryItem(order = order, onTrack = { viewModel.setTrackingOrderId(order.orderId) })
+                    OrderHistoryItem(
+                        order = order,
+                        translate = { viewModel.translate(it) },
+                        onTrack = { viewModel.setTrackingOrderId(order.orderId) }
+                    )
                 }
             }
         }
@@ -1529,6 +1766,7 @@ fun OrdersTabScreen(
 @Composable
 fun ActiveOrderTrackingCard(
     order: Order,
+    translate: (String) -> String,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1569,14 +1807,14 @@ fun ActiveOrderTrackingCard(
                                 else -> order.status
                             }
                             Text(
-                                text = statusDisplay,
+                                text = translate(statusDisplay),
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = GourmetTextDark
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = if (order.etaMinutes > 0) "Arriving in ${order.etaMinutes} mins" else "Handed over safely",
+                                text = if (order.etaMinutes > 0) translate("Arriving in ${order.etaMinutes} mins") else translate("Handed over safely"),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = GourmetSubtextLight
@@ -1634,7 +1872,7 @@ fun ActiveOrderTrackingCard(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "LIVE SATELLITE RADAR",
+                            text = translate("LIVE SATELLITE RADAR"),
                             color = Color.White,
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Bold,
@@ -1676,7 +1914,7 @@ fun ActiveOrderTrackingCard(
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "DELIVERY PARTNER",
+                            translate("DELIVERY PARTNER"),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = GourmetSubtextLight,
@@ -1738,7 +1976,7 @@ fun ActiveOrderTrackingCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Order Summary",
+                            text = translate("Order Summary"),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = GourmetTextDark
@@ -1750,7 +1988,7 @@ fun ActiveOrderTrackingCard(
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                "PAID SECURELY",
+                                translate("PAID SECURELY"),
                                 fontSize = 8.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = GourmetGreenText,
@@ -1799,13 +2037,13 @@ fun ActiveOrderTrackingCard(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = name,
+                                    text = translate(name),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = GourmetTextDark
                                 )
                                 Text(
-                                    text = "$qty Pack${if (qty != "1") "s" else ""}",
+                                    text = "$qty ${if (qty == "1") translate("each_label") else translate("Packs")}",
                                     fontSize = 11.sp,
                                     color = GourmetSubtextLight
                                 )
@@ -1823,12 +2061,12 @@ fun ActiveOrderTrackingCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Delivery Fee",
+                            text = translate("Delivery Fee"),
                             fontSize = 13.sp,
                             color = GourmetSubtextLight
                         )
                         Text(
-                            text = "FREE",
+                            text = translate("FREE"),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = GourmetGreenText
@@ -1843,7 +2081,7 @@ fun ActiveOrderTrackingCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Total Amount",
+                            text = translate("Total Amount"),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = GourmetTextDark
@@ -1863,7 +2101,7 @@ fun ActiveOrderTrackingCard(
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                "Delivery History Logs",
+                translate("Delivery History Logs"),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -1871,32 +2109,32 @@ fun ActiveOrderTrackingCard(
             Spacer(modifier = Modifier.height(10.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DeliveryStepItem(
-                    title = "Order Delivered",
-                    subtitle = "Package handed to customer. Enjoy your fresh stone-ground batter!",
+                    title = translate("Order Delivered"),
+                    subtitle = translate("Package handed to customer. Enjoy your fresh stone-ground batter!"),
                     isCompleted = order.progress >= 1.0f,
                     isCurrent = order.status == "DELIVERED"
                 )
                 DeliveryStepItem(
-                    title = "Out for Delivery",
-                    subtitle = "Partner is cruising on eco-scooter. Warm fluffy batter is nearly there!",
+                    title = translate("Out for Delivery"),
+                    subtitle = translate("Partner is cruising on eco-scooter. Warm fluffy batter is nearly there!"),
                     isCompleted = order.progress >= 0.85f,
                     isCurrent = order.status == "OUT_FOR_DELIVERY"
                 )
                 DeliveryStepItem(
-                    title = "Dispatched from V&N Store",
-                    subtitle = "Packed secure in cold-shield bags. Fresh fermentation locked.",
+                    title = translate("Dispatched from V&N Store"),
+                    subtitle = translate("Packed secure in cold-shield bags. Fresh fermentation locked."),
                     isCompleted = order.progress >= 0.55f,
                     isCurrent = order.status == "DISPATCHED"
                 )
                 DeliveryStepItem(
-                    title = "Fermenting & Preparing",
-                    subtitle = "Our culinary team is selecting and sealing the prime active batter.",
+                    title = translate("Fermenting & Preparing"),
+                    subtitle = translate("Our culinary team is selecting and sealing the prime active batter."),
                     isCompleted = order.progress >= 0.25f,
                     isCurrent = order.status == "PREPARING"
                 )
                 DeliveryStepItem(
-                    title = "Secure Checkout Approved",
-                    subtitle = "Encrypted digital handshake successful. Cooking order initiated.",
+                    title = translate("Secure Checkout Approved"),
+                    subtitle = translate("Encrypted digital handshake successful. Cooking order initiated."),
                     isCompleted = order.progress >= 0.05f,
                     isCurrent = order.status == "PENDING"
                 )
@@ -1911,7 +2149,7 @@ fun ActiveOrderTrackingCard(
                 colors = ButtonDefaults.buttonColors(containerColor = GourmetPrimaryLight),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Back to Order History", fontWeight = FontWeight.Bold, color = Color.White)
+                Text(translate("Back to Order History"), fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }
@@ -2098,10 +2336,24 @@ fun DeliveryStepItem(
 @Composable
 fun OrderHistoryItem(
     order: Order,
+    translate: (String) -> String,
     onTrack: () -> Unit
 ) {
     val formatter = remember { SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()) }
     val dateStr = remember(order.timestamp) { formatter.format(Date(order.timestamp)) }
+
+    val translatedSummary = remember(order.itemsSummary) {
+        order.itemsSummary.split(", ").map { itemStr ->
+            if (itemStr.contains(" x ")) {
+                val parts = itemStr.split(" x ")
+                val qty = parts.getOrNull(0) ?: "1"
+                val name = parts.getOrNull(1) ?: itemStr
+                "$qty x ${translate(name)}"
+            } else {
+                translate(itemStr)
+            }
+        }.joinToString(", ")
+    }
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -2123,7 +2375,7 @@ fun OrderHistoryItem(
             ) {
                 Column {
                     Text(
-                        text = "ID: ${order.orderId}",
+                        text = translate("ID: ${order.orderId}"),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -2143,8 +2395,16 @@ fun OrderHistoryItem(
                         )
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
+                    val statusDisplay = when (order.status) {
+                        "PENDING" -> "Approval Pending"
+                        "PREPARING" -> "Fermenting & Preparing"
+                        "DISPATCHED" -> "Dispatched Securely"
+                        "OUT_FOR_DELIVERY" -> "Out for delivery"
+                        "DELIVERED" -> "Delivered Fresh"
+                        else -> order.status
+                    }
                     Text(
-                        text = order.status,
+                        text = translate(statusDisplay),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (order.status == "DELIVERED") Color(0xFF34C759) else MaterialTheme.colorScheme.primary
@@ -2157,7 +2417,7 @@ fun OrderHistoryItem(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = order.itemsSummary,
+                text = translatedSummary,
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 maxLines = 1,
@@ -2172,7 +2432,7 @@ fun OrderHistoryItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Total Paid: ₹${String.format(Locale.US, "%.2f", order.totalAmount)}",
+                    text = translate("Total Paid") + ": ₹${String.format(Locale.US, "%.2f", order.totalAmount)}",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -2185,7 +2445,7 @@ fun OrderHistoryItem(
                     modifier = Modifier.height(30.dp)
                 ) {
                     Text(
-                        text = if (order.status == "DELIVERED") "View Summary" else "Track Live",
+                        text = if (order.status == "DELIVERED") translate("View Summary") else translate("Track Live"),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -2198,7 +2458,7 @@ fun OrderHistoryItem(
 // ---------------- PROFILE / INFORMATION TAB ----------------
 
 @Composable
-fun ProfileTabScreen() {
+fun ProfileTabScreen(translate: (String) -> String) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -2230,13 +2490,13 @@ fun ProfileTabScreen() {
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "V&N Foods",
+                    text = translate("V&N Foods"),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Version 1.0.0 (Secure Build)",
+                    text = translate("Version 1.0.0 (Secure Build)"),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 )
@@ -2247,7 +2507,7 @@ fun ProfileTabScreen() {
 
         // Info details cards
         Text(
-            text = "Fermentation Craftsmanship",
+            text = translate("Fermentation Craftsmanship"),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -2264,14 +2524,14 @@ fun ProfileTabScreen() {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "V&N Natural Stone-Ground Method",
+                    text = translate("V&N Natural Stone-Ground Method"),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Unlike fast commercial mills that heat the grains and destroy crucial gut-friendly microbes, our stone-grinders spin slowly at ambient temperature. We allow our premium organic black gram and polished short-grain rice to ferment naturally in controlled pristine chambers for exactly 14 hours. No added yeast, no soda, 100% natural.",
+                    text = translate("Unlike fast commercial mills that heat the grains and destroy crucial gut-friendly microbes, our stone-grinders spin slowly at ambient temperature. We allow our premium organic black gram and polished short-grain rice to ferment naturally in controlled pristine chambers for exactly 14 hours. No added yeast, no soda, 100% natural."),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     lineHeight = 18.sp
@@ -2282,7 +2542,7 @@ fun ProfileTabScreen() {
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "App Features",
+            text = translate("App Features"),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -2300,20 +2560,20 @@ fun ProfileTabScreen() {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ProfileFeatureRow(
                     icon = Icons.Rounded.VerifiedUser,
-                    title = "Secure Encrypted Pay",
-                    description = "Card data is formatted locally and never stored. Processed through cryptographic hashing."
+                    title = translate("Secure Encrypted Pay"),
+                    description = translate("Card data is formatted locally and never stored. Processed through cryptographic hashing.")
                 )
                 Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 ProfileFeatureRow(
                     icon = Icons.Rounded.DirectionsRun,
-                    title = "Database Tracking Engine",
-                    description = "Real-time delivery progress calculations persisted directly in your local SQLite Room DB."
+                    title = translate("Database Tracking Engine"),
+                    description = translate("Card data formatted locally, delivery progress is stored securely in Room DB.")
                 )
                 Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 ProfileFeatureRow(
                     icon = Icons.Rounded.Eco,
-                    title = "Cold-Shield Logistics",
-                    description = "All products dispatched in specialized temperature containers maintaining exactly 4°C."
+                    title = translate("Cold-Shield Logistics"),
+                    description = translate("All products dispatched in specialized temperature containers maintaining exactly 4°C.")
                 )
             }
         }
@@ -3349,6 +3609,223 @@ fun formatReviewDate(timestamp: Long): String {
         hours > 0 -> "$hours hours ago"
         minutes > 0 -> "$minutes mins ago"
         else -> "Just now"
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GoogleTranslateTopBar(
+    viewModel: MainViewModel,
+    currentLanguage: String,
+    onTranslateClick: () -> Unit
+) {
+    val translatedTitle = viewModel.translate("V&N Foods")
+    val activeLang = AppTranslation.LANGUAGES.find { it.code == currentLanguage } ?: AppTranslation.LANGUAGES.first()
+
+    CenterAlignedTopAppBar(
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Restaurant,
+                    contentDescription = null,
+                    tint = GourmetPrimaryLight,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = translatedTitle,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp,
+                    color = GourmetTextDark,
+                    letterSpacing = 0.5.sp
+                )
+            }
+        },
+        actions = {
+            Surface(
+                onClick = onTranslateClick,
+                color = GourmetPeachLight.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(100.dp),
+                border = BorderStroke(1.dp, GourmetPrimaryLight.copy(alpha = 0.25f)),
+                modifier = Modifier
+                    .padding(end = 12.dp)
+                    .testTag("google_translate_trigger")
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Translate,
+                        contentDescription = "Translate icon",
+                        tint = GourmetPrimaryLight,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "${activeLang.flag} ${activeLang.name}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GourmetPrimaryLight
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowDropDown,
+                        contentDescription = null,
+                        tint = GourmetPrimaryLight,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = GourmetSurfaceLight,
+            titleContentColor = GourmetTextDark
+        ),
+        modifier = Modifier.shadow(2.dp)
+    )
+}
+
+@Composable
+fun GoogleTranslateDialog(
+    viewModel: MainViewModel,
+    currentLanguage: String,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .border(1.5.dp, GourmetPrimaryLight.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+                .testTag("google_translate_dialog")
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Color(0xFF4285F4), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Translate,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = viewModel.translate("Google Translate"),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF4285F4)
+                        )
+                        Text(
+                            text = viewModel.translate("Powered by Google Cloud Translation"),
+                            fontSize = 10.sp,
+                            color = GourmetSubtextLight.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider(color = GourmetClayLight.copy(alpha = 0.2f))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = viewModel.translate("Translate application to:"),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GourmetTextDark,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 260.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    AppTranslation.LANGUAGES.forEach { lang ->
+                        val isSelected = lang.code == currentLanguage
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) GourmetPeachLight.copy(alpha = 0.5f) else Color.Transparent)
+                                .clickable {
+                                    viewModel.setLanguage(lang.code)
+                                    onDismiss()
+                                }
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = lang.flag,
+                                    fontSize = 18.sp
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = lang.name,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                    color = if (isSelected) GourmetPrimaryLight else GourmetTextDark
+                                )
+                                if (lang.code == "en") {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "(${viewModel.translate("English (Original)")})",
+                                        fontSize = 11.sp,
+                                        color = GourmetSubtextLight.copy(alpha = 0.6f)
+                                    )
+                                }
+                            }
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Check,
+                                    contentDescription = "Selected",
+                                    tint = GourmetPrimaryLight,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.textButtonColors(contentColor = GourmetPrimaryLight)
+                    ) {
+                        Text("Close", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                }
+            }
+        }
     }
 }
 
